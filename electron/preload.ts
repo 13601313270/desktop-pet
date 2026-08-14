@@ -19,6 +19,16 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
     return ipcRenderer.invoke(channel, ...omit)
   },
 
+  // 获取窗口位置
+  getWindowPosition: () => {
+    return ipcRenderer.invoke('get-window-position')
+  },
+
+  // 设置窗口位置
+  moveWindow: (x: number, y: number) => {
+    ipcRenderer.send('move-window', x, y)
+  }
+
   // You can expose other APTs you need here.
   // ...
 })

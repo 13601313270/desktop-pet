@@ -28,8 +28,8 @@ let win: BrowserWindow | null
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 300,
-    height: 300,
+    width: 1200,
+    height: 500,
 
     frame: false,
     transparent: true,
@@ -54,6 +54,7 @@ function createWindow() {
     // win.loadFile('dist/index.html')
     win.loadFile(path.join(RENDERER_DIST, 'index.html'))
   }
+  win.webContents.openDevTools()
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
