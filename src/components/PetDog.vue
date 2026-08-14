@@ -114,67 +114,81 @@ function init() {
   scene.add(ambient)
   const loader = new FBXLoader()
   console.log('aaa', 1)
-  loader.load(
-    '/pets/cur.fbx',
-    (gltf_) => {
-      gltf = gltf_;
-      gltfBac = clone(gltf_) as any;
-      console.log('aaa', 2)
-      const box = new THREE.Box3().setFromObject(gltf)
-      const size = box.getSize(new THREE.Vector3())
-      console.log('ssss', JSON.stringify(size))
-      camera.position.set(0, size.z * 1.5, size.z * 3)
-      camera.lookAt(0, 0, 0)
-      light.position.set(10, 50, 0)
-      const textureLoader = new THREE.TextureLoader()
-      textureLoader.load('/pets/cur.png', (texture) => {
-        console.log('aaa', 3)
-        gltf.traverse((child) => {
+  Promise.all([
+    new Promise(resolve => {
+      loader.load(
+        '/pets/cur.fbx',
+        (curObj) => {
+          resolve(curObj)
+        }
+      )
+    }),
+    new Promise(resolve => {
+      loader.load(
+        '/pets/newDog.fbx',
+        (curObj) => {
+          resolve(curObj)
+        }
+      )
+    })
+  ]).then(([curObj, newDog]: any) => {
+    gltf = curObj;
+    gltfBac = clone(curObj) as any;
+    console.log('aaa', 2)
+    const box = new THREE.Box3().setFromObject(gltf)
+    const size = box.getSize(new THREE.Vector3())
+    console.log('ssss', JSON.stringify(size))
+    camera.position.set(0, size.z * 1.5, size.z * 3)
+    camera.lookAt(0, 0, 0)
+    light.position.set(10, 50, 0)
+    const textureLoader = new THREE.TextureLoader()
+    textureLoader.load('/pets/cur.png', (texture) => {
+      console.log('aaa', 3)
+      gltf.traverse((child) => {
+        // @ts-ignore
+        if (child.isMesh) {
           // @ts-ignore
-          if (child.isMesh) {
-            // @ts-ignore
-            const material = child.material
-            if (material.map) {
-              material.map.dispose()
-            }
-            material.map = texture
-            material.needsUpdate = true
+          const material = child.material
+          if (material.map) {
+            material.map.dispose()
           }
-        })
-        gltf.animations.forEach((animation) => {
-          // console.log('animation', animation);
-          const title = ({
-            cur_WigglingTail: '摇尾巴',
-            cur_Walking01: '走路',
-            cur_Running: '跑',
-            cur_Walking02: '快走',
-            cur_NoAction: '停止',
-            cur_Eating: '吃东西',
-            cur_Angry: '生气',
-            cur_Sitting: '坐下',
-            cur_Breathing: '站着喘气'
-          })[animation.name]
-          allAnimationList.value.push({
-            name: animation.name,
-            title: title || animation.name,
-          })
-        })
-        // gltf旋转y 180度
-        gltf.rotation.y = Math.PI / 4 * 3
-        gltf.position.y = 0;
-
-        // 1. 创建动画混合器
-        mixer = new THREE.AnimationMixer(gltf)
-        scene.add(gltf)
-
-        gltfBac.position.x = 10000;
-        gltfBac.rotation.y = Math.PI
-        mixerBac = new THREE.AnimationMixer(gltfBac)
-        scene.add(gltfBac)
-        animate()
+          material.map = texture
+          material.needsUpdate = true
+        }
       })
-    }
-  )
+      gltf.animations.forEach((animation) => {
+        // console.log('animation', animation);
+        const title = ({
+          cur_WigglingTail: '摇尾巴',
+          cur_Walking01: '走路',
+          cur_Running: '跑',
+          cur_Walking02: '快走',
+          cur_NoAction: '停止',
+          cur_Eating: '吃东西',
+          cur_Angry: '生气',
+          cur_Sitting: '坐下',
+          cur_Breathing: '站着喘气'
+        })[animation.name]
+        allAnimationList.value.push({
+          name: animation.name,
+          title: title || animation.name,
+        })
+      })
+      // gltf旋转y 180度
+      gltf.rotation.y = Math.PI / 4 * 3
+      gltf.position.y = 0;
+
+      // 1. 创建动画混合器
+      mixer = new THREE.AnimationMixer(gltf)
+      scene.add(gltf)
+
+      gltfBac.position.x = 10000;
+      gltfBac.rotation.y = Math.PI
+      mixerBac = new THREE.AnimationMixer(gltfBac)
+      scene.add(gltfBac)
+      animate()
+    })
+  })
 
   function animate() {
     requestAnimationFrame(animate)
