@@ -6,6 +6,11 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 
 const clock = new THREE.Clock()
 
+let mixer: THREE.AnimationMixer;
+let runningAction: {
+  [key in string]: any
+} = [];
+
 function init() {
   const scene = new THREE.Scene()
 
@@ -74,9 +79,7 @@ function init() {
         gltf.rotation.y = Math.PI
 
         // 1. 创建动画混合器
-        const mixer = new THREE.AnimationMixer(gltf)
-        // @ts-ignore
-        window.mixer = mixer
+        mixer = new THREE.AnimationMixer(gltf)
         scene.add(gltf)
         animate()
       })
@@ -85,25 +88,17 @@ function init() {
 
   function animate() {
     requestAnimationFrame(animate)
-
-
     const delta = clock.getDelta()
-
-    // @ts-ignore
-    if (window.mixer) {
-      // @ts-ignore
-      window.mixer.update(delta)
+    if (mixer) {
+      mixer.update(delta)
     }
-
     renderer.render(scene, camera)
   }
 }
-function runAction(actionStr: string = 'cur_WigglingTail') {
+function runAction(actionStr: string) {
   console.log('aaa', 4)
-  // @ts-ignore
-  const action = window.mixer.clipAction(actionStr)
-  // @ts-ignore
-  window.runningAction = action;
+  const action = mixer.clipAction(actionStr)
+  runningAction[actionStr] = action;
   if (action) {
     console.log('aaa', 5)
     action.timeScale = 0.5
@@ -112,13 +107,11 @@ function runAction(actionStr: string = 'cur_WigglingTail') {
     action.play()
   }
 }
-function stopRunningAction() {
-  // @ts-ignore
-  window.runningAction.stop()
+function stopRunningAction(actionStr: string) {
+  runningAction[actionStr].stop()
+  delete runningAction[actionStr]
 }
-// @ts-ignore
 window.runAction = runAction
-// @ts-ignore
 window.stopRunningAction = stopRunningAction;
 onMounted(() => {
   setTimeout(() => {
