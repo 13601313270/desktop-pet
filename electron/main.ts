@@ -26,9 +26,10 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 
 
 let win: BrowserWindow | null
 
+const showDev = false;
 function createWindow() {
   win = new BrowserWindow({
-    width: 1200,
+    width: showDev ? 1200 : 500,
     height: 500,
 
     frame: false,
@@ -54,7 +55,9 @@ function createWindow() {
     // win.loadFile('dist/index.html')
     win.loadFile(path.join(RENDERER_DIST, 'index.html'))
   }
-  win.webContents.openDevTools()
+  if (showDev) {
+    win.webContents.openDevTools()
+  }
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
