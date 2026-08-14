@@ -14,6 +14,20 @@ let runningAction: any;
 let gltf: THREE.Group<THREE.Object3DEventMap>;
 let gltfBac: THREE.Group<THREE.Object3DEventMap>;
 
+/**
+* 角度最短路径线性插值
+* 确保从 start 到 end 走的是圆周上较近的旋转方向
+*/
+function lerpAngle(start: number, end: number, t: number): number {
+  let diff = end - start
+  if (diff > Math.PI) {
+    diff -= Math.PI * 2
+  } else if (diff < -Math.PI) {
+    diff += Math.PI * 2
+  }
+  return start + diff * t
+}
+
 function capturePose(model: THREE.Group<THREE.Object3DEventMap>) {
   const pose: {
     [key in string]: any
@@ -68,12 +82,11 @@ function blendPose(
       from.position.z + (to.position.z - from.position.z) * progress
     )
     obj.rotation.set(
-      from.rotation.x + (to.rotation.x - from.rotation.x) * progress,
-      from.rotation.y + (to.rotation.y - from.rotation.y) * progress,
-      from.rotation.z + (to.rotation.z - from.rotation.z) * progress
+      lerpAngle(from.rotation.x, to.rotation.x, progress),
+      lerpAngle(from.rotation.y, to.rotation.y, progress),
+      lerpAngle(from.rotation.z, to.rotation.z, progress),
     )
   })
-  // model.position.y = Math.random() * 0.1;
   renderer.render(scene, camera)
 }
 
@@ -127,7 +140,8 @@ function init() {
             material.needsUpdate = true
           }
         })
-        gltf.animations.forEach((animation, index) => {
+        gltf.animations.forEach((animation) => {
+          console.log('animation', animation);
           allAnimationList.value.push({
             name: animation.name,
           })
@@ -183,26 +197,26 @@ async function runAction(actionStr: string) {
 
     // 4. 恢复正常
     action.paused = false
-    await sleep(1000)
+    await sleep(20)
     if (runningAction) {
       runningAction.stop();
     }
     blendPose(gltf, fromPose, toPose, 0.1)
-    await sleep(100)
+    await sleep(20)
     blendPose(gltf, fromPose, toPose, 0.2)
-    await sleep(100)
+    await sleep(20)
     blendPose(gltf, fromPose, toPose, 0.3)
-    await sleep(100)
+    await sleep(20)
     blendPose(gltf, fromPose, toPose, 0.4)
-    await sleep(100)
+    await sleep(20)
     blendPose(gltf, fromPose, toPose, 0.5)
-    await sleep(100)
+    await sleep(20)
     blendPose(gltf, fromPose, toPose, 0.6)
-    await sleep(100)
+    await sleep(20)
     blendPose(gltf, fromPose, toPose, 0.7)
-    await sleep(100)
+    await sleep(20)
     blendPose(gltf, fromPose, toPose, 0.8)
-    await sleep(100)
+    await sleep(20)
     blendPose(gltf, fromPose, toPose, 0.9)
     // await sleep(1000)
     // action.timeScale = 0.1
@@ -213,7 +227,7 @@ async function runAction(actionStr: string) {
 }
 // @ts-ignore
 window.runningAction = () => { return runningAction; }
-function stopRunningAction(actionStr: string) {
+function stopRunningAction() {
   runningAction.stop()
 }
 window.runAction = runAction
