@@ -12,8 +12,8 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 
 let win;
 function createWindow() {
   win = new BrowserWindow({
-    width: 500,
-    height: 500,
+    width: 300,
+    height: 300,
     frame: false,
     transparent: true,
     resizable: false,

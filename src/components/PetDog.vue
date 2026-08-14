@@ -92,6 +92,7 @@ function blendPose(
 
 const allAnimationList = ref<{
   name: string;
+  title: string;
 }[]>([]);
 
 function init() {
@@ -122,8 +123,8 @@ function init() {
       const box = new THREE.Box3().setFromObject(gltf)
       const size = box.getSize(new THREE.Vector3())
       console.log('ssss', JSON.stringify(size))
-      camera.position.set(0, size.z * 2, size.z * 5)
-      camera.lookAt(0, size.z / 2, 0)
+      camera.position.set(0, size.z * 1.5, size.z * 3)
+      camera.lookAt(0, 0, 0)
       light.position.set(10, 50, 0)
       const textureLoader = new THREE.TextureLoader()
       textureLoader.load('/pets/cur.png', (texture) => {
@@ -141,19 +142,32 @@ function init() {
           }
         })
         gltf.animations.forEach((animation) => {
-          console.log('animation', animation);
+          // console.log('animation', animation);
+          const title = ({
+            cur_WigglingTail: '摇尾巴',
+            cur_Walking01: '走路',
+            cur_Running: '跑',
+            cur_Walking02: '快走',
+            cur_NoAction: '停止',
+            cur_Eating: '吃东西',
+            cur_Angry: '生气',
+            cur_Sitting: '坐下',
+            cur_Breathing: '站着喘气'
+          })[animation.name]
           allAnimationList.value.push({
             name: animation.name,
+            title: title || animation.name,
           })
         })
         // gltf旋转y 180度
-        gltf.rotation.y = Math.PI
+        gltf.rotation.y = Math.PI / 4 * 3
+        gltf.position.y = 0;
 
         // 1. 创建动画混合器
         mixer = new THREE.AnimationMixer(gltf)
         scene.add(gltf)
 
-        gltfBac.position.x = 0.5;
+        gltfBac.position.x = 10000;
         gltfBac.rotation.y = Math.PI
         mixerBac = new THREE.AnimationMixer(gltfBac)
         scene.add(gltfBac)
@@ -221,6 +235,11 @@ async function runAction(actionStr: string) {
     // await sleep(1000)
     // action.timeScale = 0.1
     // 4. 播放
+    if (actionStr === 'cur_Sitting') {
+      action.setLoop(THREE.LoopOnce, 1);
+      action.clampWhenFinished = true;
+      action.enabled = true;
+    }
     action.play()
     runningAction = action;
   }
@@ -238,17 +257,21 @@ onMounted(() => {
   }, 200)
 })
 
-function test() {
-  // alert('test')
+function test(e: MouseEvent) {
+  const { clientX, clientY } = e;
+  console.log('e', clientX, clientY)
+  if (clientX > window.innerWidth / 2) {
+    // gltf.rotation.y = Math.PI / 2
+  }
 }
 </script>
 
 <template>
   <div class="out" @click="test">
-    <div class="drag">drag</div>
+    <!-- <div class="drag">drag</div> -->
     <div class="actionList">
       <div v-for="item in allAnimationList" class="action" @click="runAction(item.name)">
-        {{ item.name }}
+        {{ item.title }}
       </div>
     </div>
     <div id="container">
@@ -262,6 +285,7 @@ function test() {
   height: 100vh;
 
   .drag {
+    position: absolute;
     -webkit-app-region: drag;
   }
 
@@ -273,8 +297,10 @@ function test() {
 
     .action {
       border: solid 1px black;
+      background-color: white;
       border-radius: 2px;
       padding: 4px;
+      cursor: pointer;
     }
   }
 }
@@ -282,6 +308,7 @@ function test() {
 #container {
   width: 100vw;
   height: 100vh;
+  -webkit-app-region: drag;
 
   &:hover {
     background-color: rgba(43, 255, 0, 0.2);

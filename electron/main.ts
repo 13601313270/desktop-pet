@@ -29,8 +29,8 @@ let win: BrowserWindow | null
 const showDev = false;
 function createWindow() {
   win = new BrowserWindow({
-    width: showDev ? 1200 : 500,
-    height: 500,
+    width: showDev ? 1200 : 300,
+    height: 300,
 
     frame: false,
     transparent: true,
