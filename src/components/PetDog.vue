@@ -132,62 +132,46 @@ function init() {
       )
     })
   ]).then(([curObj, newDog]: any) => {
-    gltf = curObj;
+    gltf = newDog;
     gltfBac = clone(curObj) as any;
-    console.log('aaa', 2)
+
+    // 先对原始模型做变换（旋转）
+    gltf.rotation.y = Math.PI / 4 * 3
+
+    // 计算模型包围盒，按最大边缩放到 ~2 单位
     const box = new THREE.Box3().setFromObject(gltf)
     const size = box.getSize(new THREE.Vector3())
-    console.log('ssss', JSON.stringify(size))
-    camera.position.set(0, size.z * 1.5, size.z * 3)
-    camera.lookAt(0, 0, 0)
-    light.position.set(10, 50, 0)
-    const textureLoader = new THREE.TextureLoader()
-    textureLoader.load('/pets/cur.png', (texture) => {
-      console.log('aaa', 3)
-      gltf.traverse((child) => {
-        // @ts-ignore
-        if (child.isMesh) {
-          // @ts-ignore
-          const material = child.material
-          if (material.map) {
-            material.map.dispose()
-          }
-          material.map = texture
-          material.needsUpdate = true
-        }
-      })
-      gltf.animations.forEach((animation) => {
-        // console.log('animation', animation);
-        const title = ({
-          cur_WigglingTail: '摇尾巴',
-          cur_Walking01: '走路',
-          cur_Running: '跑',
-          cur_Walking02: '快走',
-          cur_NoAction: '停止',
-          cur_Eating: '吃东西',
-          cur_Angry: '生气',
-          cur_Sitting: '坐下',
-          cur_Breathing: '站着喘气'
-        })[animation.name]
-        allAnimationList.value.push({
-          name: animation.name,
-          title: title || animation.name,
-        })
-      })
-      // gltf旋转y 180度
-      gltf.rotation.y = Math.PI / 4 * 3
-      gltf.position.y = 0;
+    const center = box.getCenter(new THREE.Vector3())
+    console.log('model size:', size.toArray(), 'center:', center.toArray())
 
-      // 1. 创建动画混合器
-      mixer = new THREE.AnimationMixer(gltf)
-      scene.add(gltf)
+    const targetSize = 2
+    const maxDim = Math.max(size.x, size.y, size.z)
+    const scale = targetSize / maxDim
+    gltf.scale.setScalar(scale)
+    gltfBac.scale.setScalar(scale)
 
-      gltfBac.position.x = 10000;
-      gltfBac.rotation.y = Math.PI
-      mixerBac = new THREE.AnimationMixer(gltfBac)
-      scene.add(gltfBac)
-      animate()
-    })
+    // 缩完再算一次中心，把模型脚底对齐到 y=0
+    const box2 = new THREE.Box3().setFromObject(gltf)
+    const center2 = box2.getCenter(new THREE.Vector3())
+    const newSize = box2.getSize(new THREE.Vector3())
+    gltf.position.y -= box2.min.y  // 脚底对齐 y=0
+    gltf.position.x -= center2.x
+    gltf.position.z -= center2.z
+
+    // 相机放到合适位置：在模型正前方偏上
+    const dist = targetSize * 2
+    camera.position.set(0, targetSize * 0.7, dist)
+    camera.lookAt(0, targetSize * 0.4, 0)
+    light.position.set(dist, targetSize * 3, dist * 0.5)
+
+    // 1. 创建动画混合器
+    mixer = new THREE.AnimationMixer(gltf)
+    scene.add(gltf)
+
+    gltfBac.position.x = 10000
+    mixerBac = new THREE.AnimationMixer(gltfBac)
+    scene.add(gltfBac)
+    animate()
   })
 
   function animate() {

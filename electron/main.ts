@@ -1,9 +1,9 @@
 import { app, BrowserWindow } from 'electron'
-import { createRequire } from 'node:module'
+// import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
-const require = createRequire(import.meta.url)
+// const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // The built directory structure
@@ -26,18 +26,24 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 
 
 let win: BrowserWindow | null
 
-const showDev = false;
+const showDev = true;
+
+// macOS 透明窗口兼容性：禁用 GPU 合成避免白色叠加
+app.commandLine.appendSwitch('disable-gpu-compositing')
+
 function createWindow() {
   win = new BrowserWindow({
     width: showDev ? 1200 : 300,
-    height: 300,
+    height: showDev ? 500 : 300,
 
     frame: false,
     transparent: true,
+    backgroundColor: '#00000000',
 
     resizable: false,
 
     alwaysOnTop: true,
+    hasShadow: false,
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),

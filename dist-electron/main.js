@@ -1,8 +1,6 @@
 import { app, BrowserWindow } from "electron";
-import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-createRequire(import.meta.url);
 const __dirname$1 = path.dirname(fileURLToPath(import.meta.url));
 process.env.APP_ROOT = path.join(__dirname$1, "..");
 const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
@@ -10,14 +8,17 @@ const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
 const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
 let win;
+app.commandLine.appendSwitch("disable-gpu-compositing");
 function createWindow() {
   win = new BrowserWindow({
-    width: 300,
-    height: 300,
+    width: 1200,
+    height: 500,
     frame: false,
     transparent: true,
+    backgroundColor: "#00000000",
     resizable: false,
     alwaysOnTop: true,
+    hasShadow: false,
     icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
     webPreferences: {
       preload: path.join(__dirname$1, "preload.mjs")
@@ -30,6 +31,9 @@ function createWindow() {
     win.loadURL(VITE_DEV_SERVER_URL);
   } else {
     win.loadFile(path.join(RENDERER_DIST, "index.html"));
+  }
+  {
+    win.webContents.openDevTools();
   }
 }
 app.on("window-all-closed", () => {
