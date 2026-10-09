@@ -1,7 +1,8 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 // import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import fs from 'node:fs'
 
 // const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -81,6 +82,40 @@ app.on('activate', () => {
   // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()
+  }
+})
+
+// 下载远端模型到本地持久化（渲染进程无文件系统写权限，必须走主进程）
+ipcMain.handle('download-pet-model', async (_event, url: string) => {
+  try {
+    const dir = path.join(app.getPath('userData'), 'pets')
+    fs.mkdirSync(dir, { recursive: true })
+    const dest = path.join(dir, 'custom_dog.glb')
+    const resp = await fetch(url)
+    if (!resp.ok) return { success: false, error: `HTTP ${resp.status}` }
+    const buf = Buffer.from(await resp.arrayBuffer())
+    fs.writeFileSync(dest, buf)
+    return { success: true, path: dest }
+  } catch (err: any) {
+    return { success: false, error: err?.message ?? String(err) }
+  }
+})
+
+// 读取本地模型为 ArrayBuffer，供渲染进程 GLTFLoader.parse 使用
+ipcMain.handle('read-pet-model', async (_event, filePath: string) => {
+  const buf = fs.readFileSync(filePath)
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
+})
+
+// 删除本地持久化的模型文件
+ipcMain.handle('delete-pet-model', async (_event, filePath: string) => {
+  try {
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath)
+    }
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err?.message ?? String(err) }
   }
 })
 

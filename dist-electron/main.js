@@ -1,6 +1,7 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import fs from "node:fs";
 const __dirname$1 = path.dirname(fileURLToPath(import.meta.url));
 process.env.APP_ROOT = path.join(__dirname$1, "..");
 const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
@@ -45,6 +46,34 @@ app.on("window-all-closed", () => {
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
+  }
+});
+ipcMain.handle("download-pet-model", async (_event, url) => {
+  try {
+    const dir = path.join(app.getPath("userData"), "pets");
+    fs.mkdirSync(dir, { recursive: true });
+    const dest = path.join(dir, "custom_dog.glb");
+    const resp = await fetch(url);
+    if (!resp.ok) return { success: false, error: `HTTP ${resp.status}` };
+    const buf = Buffer.from(await resp.arrayBuffer());
+    fs.writeFileSync(dest, buf);
+    return { success: true, path: dest };
+  } catch (err) {
+    return { success: false, error: (err == null ? void 0 : err.message) ?? String(err) };
+  }
+});
+ipcMain.handle("read-pet-model", async (_event, filePath) => {
+  const buf = fs.readFileSync(filePath);
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+});
+ipcMain.handle("delete-pet-model", async (_event, filePath) => {
+  try {
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: (err == null ? void 0 : err.message) ?? String(err) };
   }
 });
 app.whenReady().then(createWindow);

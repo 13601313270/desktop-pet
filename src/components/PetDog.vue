@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import * as THREE from 'three'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
-// import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { sleep } from '../utils/sleep';
+
+const props = defineProps<{
+  customModelPath?: string
+}>()
 
 const clock = new THREE.Clock()
 
@@ -95,7 +99,7 @@ const allAnimationList = ref<{
   title: string;
 }[]>([]);
 
-function init() {
+async function init() {
   renderer.setSize(
     window.innerWidth,
     window.innerHeight
@@ -121,6 +125,13 @@ function init() {
   const hemi = new THREE.HemisphereLight(0xffffff, 0x888888, 1.5)
   hemi.position.set(0, 5, 0)
   scene.add(hemi)
+
+  if (props.customModelPath) {
+    await loadCustomModel()
+    animate()
+    return
+  }
+
   const loader = new FBXLoader()
   console.log('aaa', 1)
   Promise.all([
@@ -259,6 +270,49 @@ function stopRunningAction() {
 }
 window.runAction = runAction
 window.stopRunningAction = stopRunningAction;
+async function loadCustomModel() {
+  if (!props.customModelPath) return
+  try {
+    const ab = await window.ipcRenderer.invoke('read-pet-model', props.customModelPath) as ArrayBuffer
+    const loader = new GLTFLoader()
+    loader.parse(
+      ab,
+      '',
+      (gltfObj: any) => {
+        if (gltf) scene.remove(gltf)
+        if (gltfBac) scene.remove(gltfBac)
+        gltf = gltfObj.scene
+        const box = new THREE.Box3().setFromObject(gltf)
+        const size = box.getSize(new THREE.Vector3())
+        const targetSize = 2
+        const maxDim = Math.max(size.x, size.y, size.z) || 1
+        gltf.scale.setScalar(targetSize / maxDim)
+        const box2 = new THREE.Box3().setFromObject(gltf)
+        gltf.position.y -= box2.min.y
+        const c2 = box2.getCenter(new THREE.Vector3())
+        gltf.position.x -= c2.x
+        gltf.position.z -= c2.z
+        const dist = targetSize * 2
+        camera.position.set(0, targetSize * 0.7, dist)
+        camera.lookAt(0, targetSize * 0.4, 0)
+        scene.add(gltf)
+        if (gltfObj.animations?.length) {
+          mixer = new THREE.AnimationMixer(gltf)
+          mixer.clipAction(gltfObj.animations[0]).play()
+        }
+        console.log('[PetDog] 自定义模型加载完成')
+      },
+      (e: any) => console.error('[PetDog] glb 解析失败:', e),
+    )
+  } catch (e: any) {
+    console.error('[PetDog] 读取本地模型失败:', e)
+  }
+}
+
+watch(() => props.customModelPath, async (v) => {
+  if (v) await loadCustomModel()
+})
+
 onMounted(() => {
   setTimeout(() => {
     init();
