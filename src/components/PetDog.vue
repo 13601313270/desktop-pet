@@ -107,11 +107,20 @@ function init() {
 
   document.getElementById('container')!.appendChild(renderer.domElement)
 
-  const light = new THREE.DirectionalLight(0xffffff, 3)
+  // 主光源（上方偏前）
+  const light = new THREE.DirectionalLight(0xffffff, 2.5)
   scene.add(light)
-  const ambient = new THREE.AmbientLight(0xffffff, 1)
-
+  // 正面补光，消除背光面全黑
+  const fillLight = new THREE.DirectionalLight(0xffffff, 1.5)
+  fillLight.position.set(0, 2, 5)
+  scene.add(fillLight)
+  // 环境光提亮整体
+  const ambient = new THREE.AmbientLight(0xffffff, 2)
   scene.add(ambient)
+  // 半球光：天空色到地面色渐变，模拟自然光
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x888888, 1.5)
+  hemi.position.set(0, 5, 0)
+  scene.add(hemi)
   const loader = new FBXLoader()
   console.log('aaa', 1)
   Promise.all([
@@ -162,7 +171,8 @@ function init() {
     const dist = targetSize * 2
     camera.position.set(0, targetSize * 0.7, dist)
     camera.lookAt(0, targetSize * 0.4, 0)
-    light.position.set(dist, targetSize * 3, dist * 0.5)
+    light.position.set(dist * 0.5, targetSize * 3, dist)
+    fillLight.position.set(0, targetSize * 0.5, dist * 1.5)
 
     // 1. 创建动画混合器
     mixer = new THREE.AnimationMixer(gltf)
